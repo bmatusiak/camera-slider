@@ -15,7 +15,7 @@
             <div class="col-8 col-md-9 col-lg-10">
                 <div class="form-group">
                   <label for="fname">Feed Rate:</label><br>
-                  <input type="range" min="0" max="5000" class="form-control" placeholder="1000" v-model="sendInputFeedRate" v-on:keyup.enter="startSlide" :disabled="!ws.connected">
+                  <input type="range" min="0" max="2000" class="form-control" placeholder="1000" v-model="sendInputFeedRate" v-on:keyup.enter="startSlide" :disabled="!ws.connected">
                   <input type="text" class="form-control" placeholder="Type here" v-model="sendInputFeedRate" v-on:keyup.enter="startSlide" :disabled="!ws.connected">
                 </div>
             </div>
@@ -38,6 +38,20 @@
       </div>
 
       <div class="row justify-content-center my-5">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-8 col-md-9 col-lg-10">
+                <div class="form-group">
+                  <label for="fname">Rotate:</label><br>
+                  <input type="range" min="0" max="360" class="form-control" placeholder="1000" v-model="sendInputRotate" v-on:keyup.enter="startSlide" :disabled="!ws.connected">
+                  <input type="text" class="form-control" placeholder="Type here" v-model="sendInputRotate" v-on:keyup.enter="startSlide" :disabled="!ws.connected">
+                </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row justify-content-center my-5">
         <div class="col-auto text-center">
           <button class="btn btn-primary" @click="startSlide" :disabled="!ws.connected">Start Slider</button>
         </div>
@@ -45,9 +59,23 @@
 
       <div class="row justify-content-center my-5">
         <div class="col-auto text-center">
-          <button class="btn btn-primary" @click="homeSlider" :disabled="!ws.connected">Home Slider</button>
+          <button class="btn btn-primary" @click="pauseSlider" :disabled="!ws.connected">Pause</button>
+          <button class="btn btn-primary" @click="resumeSlider" :disabled="!ws.connected">Continue</button>
         </div>
       </div>
+      <div class="row justify-content-center my-5">
+        <div class="col-auto text-center">
+          <button class="btn btn-primary" @click="cancelSlider" :disabled="!ws.connected">Cancel/Abort</button>
+          <button class="btn btn-primary" @click="unlockSlider" :disabled="!ws.connected">Unlock</button>
+        </div>
+      </div>
+      <div class="row justify-content-center my-5">
+        <div class="col-auto text-center">
+          <button class="btn btn-primary" @click="relPOS" :disabled="!ws.connected">Relative Positioning</button>
+          <button class="btn btn-primary" @click="absPOS" :disabled="!ws.connected">Absolute Positioning</button>
+        </div>
+      </div>
+
       <div class="row justify-content-center">
         <div class="col-11 col-md-9">
           <div class="card shadow-lg">
@@ -102,8 +130,10 @@ export default {
       },
       serialBuffer: "",
       sendInput: "",
-      sendInputFeedRate: 1000,
-      sendInputDistance: 100
+      sendInputFeedRate: 500,
+      sendInputDistance: 1000,
+      sendInputRotate: 90,
+      
     }
   },
 
@@ -115,18 +145,36 @@ export default {
       }
     },
     startSlide(){
-      var cmd = "G1 X"+this.sendInputDistance+" F"+this.sendInputFeedRate;
-      Socket.send(cmd);      
-      
+      var cmd = "G1 X"+this.sendInputDistance+" Y"+this.sendInputRotate+" F"+this.sendInputFeedRate;
+      Socket.send(cmd);
     },
     homeSlider(){
-      Socket.send("G28");
+      Socket.send("$H");
+    },
+    cancelSlider(){
+      Socket.send(String.fromCharCode(24));//sends ctrl-x 
+    },
+    pauseSlider(){
+      Socket.send("!");
+    },
+    resumeSlider(){
+      Socket.send("~");
+    },
+    unlockSlider(){
+      Socket.send("$X");
+    },
+    relPOS(){
+      Socket.send("G91");
+    },
+    absPOS(){
+      Socket.send("G90");
     }
   },
 
   mounted(){
     Socket.$on("connected", () => {
       this.ws.connected = true;
+      Socket.send("?");
     });
 
     Socket.$on("disconnected", () => {
